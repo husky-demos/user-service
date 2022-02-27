@@ -4,7 +4,10 @@ import com.github.husky_demos.user_service.v1.UserModel;
 import com.github.husky_demos.user_service.v1.UserServiceGrpc;
 import com.github.husky_demos.wallet_service.v1.WalletModel;
 import com.github.husky_demos.wallet_service.v1.WalletServiceGrpc;
+import com.google.rpc.Status;
 import io.grpc.Channel;
+import io.grpc.StatusRuntimeException;
+import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 
 public class UserService extends UserServiceGrpc.UserServiceImplBase {
@@ -18,9 +21,14 @@ public class UserService extends UserServiceGrpc.UserServiceImplBase {
 
     @Override
     public void login(UserModel.LoginRequest request, StreamObserver<UserModel.LoginResult> responseObserver) {
-
-        WalletModel.Wallet wallet = walletService.queryByUserId(WalletModel.Id.newBuilder().build());
-        System.out.println(wallet.toString());
+        try {
+            WalletModel.Wallet wallet = walletService.queryByUserId(WalletModel.Id.newBuilder().build());
+            System.out.println(wallet.toString());
+        } catch (StatusRuntimeException e) {
+            Status status = StatusProto.fromThrowable(e);
+            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
+            return;
+        }
 
         UserModel.LoginResult result = UserModel.LoginResult.newBuilder()
                 .setUser(UserModel.User.newBuilder()
